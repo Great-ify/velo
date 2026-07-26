@@ -61,12 +61,22 @@ export default function UsernameSetup() {
 
     try {
       const deviceId = useWalletStore.getState().deviceId
+      const nimAddress = useWalletStore.getState().nimAddress
+
       if (!deviceId) throw new Error('No device ID')
 
+      // Use upsert to handle both existing and missing profile rows
       const { error: dbError } = await supabase
         .from('profiles')
-        .update({ username: sanitized, updated_at: new Date().toISOString() })
-        .eq('device_id', deviceId)
+        .upsert(
+          {
+            device_id: deviceId,
+            username: sanitized,
+            nim_address: nimAddress,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'device_id' }
+        )
 
       if (dbError) throw dbError
 
@@ -79,6 +89,7 @@ export default function UsernameSetup() {
         setAvailable(false)
       } else {
         setError('Failed to save username. Try again.')
+        console.error('Username save error:', err)
       }
     } finally {
       setSaving(false)

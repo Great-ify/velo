@@ -1,5 +1,6 @@
 import { type ReactNode, createContext, useContext, useEffect } from 'react'
 import { useWalletStore } from '@/stores/wallet'
+import { supabase } from '@/lib/supabase'
 
 interface NimiqContextType {
   nimAddress: string | null
@@ -16,25 +17,47 @@ export function NimiqProvider({ children }: { children: ReactNode }) {
     useWalletStore()
 
   useEffect(() => {
-    // Try to get device identifier on mount
     async function initDevice() {
       try {
-        // In Nimiq Pay, requestDeviceIdentifier provides a per-origin hash
-        // For development, we generate a local ID
-        const stored = localStorage.getItem('velo-device-id')
-        if (stored) {
-          setDeviceId(stored)
-        } else {
-          const id = crypto.randomUUID()
+        let id = localStorage.getItem('velo-device-id')
+        if (!id) {
+          id = crypto.randomUUID()
           localStorage.setItem('velo-device-id', id)
-          setDeviceId(id)
         }
+        setDeviceId(id)
+
+        // Ensure a profile row exists for this device
+        await supabase.from('profiles').upsert(
+          { device_id: id, updated_at: new Date().toISOString() },
+          { onConflict: 'device_id', ignoreDuplicates: true }
+        )
       } catch (err) {
         console.error('Failed to init device:', err)
       }
     }
     initDevice()
   }, [setDeviceId])
+
+  // When wallet connects, update the profile row with the address
+  useEffect(() => {
+    if (!nimAddress) return
+    const deviceId = localStorage.getItem('velo-device-id')
+    if (!deviceId) return
+
+    supabase
+      .from('profiles')
+      .upsert(
+        {
+          device_id: deviceId,
+          nim_address: nimAddress,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'device_id' }
+      )
+      .then(({ error }) => {
+        if (error) console.error('Failed to sync wallet address:', error)
+      })
+  }, [nimAddress])
 
   return (
     <NimiqContext.Provider

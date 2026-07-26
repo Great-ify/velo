@@ -3,6 +3,7 @@ import { X, Wallet } from 'lucide-react'
 import { useAppStore } from '@/stores/app'
 import { useWalletStore } from '@/stores/wallet'
 import { useNimiqContext } from '@/providers/NimiqProvider'
+import { supabase } from '@/lib/supabase'
 import { useState } from 'react'
 
 export default function WalletConnectModal() {
@@ -17,10 +18,27 @@ export default function WalletConnectModal() {
     setConnecting(true)
     try {
       await connectNimiq()
+
+      // Sync the new address to Supabase profile
+      const deviceId = useWalletStore.getState().deviceId
+      const address = useWalletStore.getState().nimAddress
+      if (deviceId && address) {
+        await supabase.from('profiles').upsert(
+          {
+            device_id: deviceId,
+            nim_address: address,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'device_id' }
+        )
+      }
+
       setShowWalletModal(false)
+
+      // Prompt username setup if none exists
       const { username } = useAppStore.getState()
       if (!username) {
-        setShowUsernameSetup(true)
+        setTimeout(() => setShowUsernameSetup(true), 300)
       }
     } catch {
       setError('Connection failed. Please try again.')
