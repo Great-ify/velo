@@ -59,7 +59,15 @@ export async function payWithNim(
       value: amountInLuna,
       fee: 0,
     })
-    return { hash: result.hash, raw: result.raw }
+    const hash = typeof result.hash === 'string'
+      ? result.hash
+      : Array.from(result.hash as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
+    const raw = typeof result.raw === 'string'
+      ? result.raw
+      : typeof (result as any).raw?.byteLength === 'number'
+        ? Array.from(result.raw as unknown as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
+        : JSON.stringify(result.raw)
+    return { hash, raw }
   } catch (err) {
     console.error('NIM payment failed:', err)
     return null

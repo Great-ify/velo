@@ -128,7 +128,7 @@ export default function SplitBill() {
       const group = await createGroup.mutateAsync({
         name: `Split $${parsedAmount.toFixed(2)}`,
         emoji: '💸',
-        currency: defaultCurrency,
+        default_currency: defaultCurrency,
       })
 
       // Add other members to the group

@@ -7,11 +7,10 @@ import { useNimiqContext } from '@/providers/NimiqProvider'
 import { formatNimAddress } from '@/lib/nimiq'
 import { formatEvmAddress } from '@/lib/evm'
 import { copyToClipboard } from '@/lib/share'
-import VeloLogo from '@/components/VeloLogo'
 
 export default function Profile() {
   const { nimAddress, evmAddress } = useWalletStore()
-  const { username, setShowWalletModal } = useAppStore()
+  const { username } = useAppStore()
   const { connectNimiq, connectEvm } = useNimiqContext()
   const [copied, setCopied] = useState<string | null>(null)
 

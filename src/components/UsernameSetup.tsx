@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase'
 
 export default function UsernameSetup() {
   const { showUsernameSetup, setShowUsernameSetup, setUsername } = useAppStore()
-  const { profileId } = useWalletStore()
   const [input, setInput] = useState('')
   const [checking, setChecking] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)

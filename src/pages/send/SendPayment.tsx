@@ -219,7 +219,7 @@ export default function SendPayment() {
       try {
         if (method === 'NIM' && recipient.nim_address) {
           const rates = await getExchangeRates()
-          const nim = fiatToNim(numericAmount, rates)
+          const nim = fiatToNim(numericAmount, rates.nim_usd)
           const luna = nimToLuna(nim)
           const result = await payWithNim(recipient.nim_address, luna)
           if (!result) throw new Error('Payment failed')
@@ -436,7 +436,7 @@ export default function SendPayment() {
           )}
 
           <button
-            onClick={() => {}}
+            onClick={() => txHash && navigate(`/transactions/${txHash}`)}
             className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all mb-4"
           >
             View Transaction
