@@ -237,10 +237,6 @@ function BalanceCardMockup() {
           <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">NIM balance</p>
           <p className="text-sm font-bold mt-0.5">420.00 NIM</p>
         </div>
-        <div>
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">USDT balance</p>
-          <p className="text-sm font-bold mt-0.5">825.50 USDT</p>
-        </div>
       </div>
 
       <p className="text-xs text-gray-500 mb-3">Quick actions</p>
@@ -320,11 +316,11 @@ function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   const faqs = [
-    { q: 'What is Velo?', a: 'Velo is a Nimiq Pay Mini App that combines group expense splitting with freelancer invoicing, settling payments in NIM or USDT.' },
-    { q: 'Is Velo free to use?', a: 'Yes, Velo is completely free. You only pay the standard blockchain transaction fees when settling payments.' },
-    { q: 'What currencies are supported?', a: 'Velo supports NIM (Nimiq) and USDT on multiple EVM chains including Polygon, Base, and Arbitrum.' },
+    { q: 'What is Velo?', a: 'Velo is a Nimiq Pay Mini App that combines group expense splitting with freelancer invoicing, settling payments in NIM.' },
+    { q: 'Is Velo free to use?', a: 'Yes, Velo is completely free. You only pay the standard Nimiq transaction fees when settling payments.' },
+    { q: 'What currencies are supported?', a: 'Velo supports NIM (Nimiq) for fast, feeless payments on the Nimiq blockchain.' },
     { q: 'Is my money safe?', a: 'Velo never holds your funds or has access to your private keys. All payments are made directly from your wallet.' },
-    { q: 'How do I get started?', a: 'Simply open Velo inside Nimiq Pay, connect your wallets, and you\'re ready to split expenses or send invoices.' },
+    { q: 'How do I get started?', a: 'Simply open Velo inside Nimiq Pay, connect your wallet, and you\'re ready to split expenses or send invoices.' },
   ]
 
   return (
@@ -403,7 +399,7 @@ export default function LandingPage() {
             >
               Split expenses, request payments, and send invoices.
               <br />
-              Settle instantly in NIM or USDT — fast, secure,
+              Settle instantly in NIM — fast, secure,
               <br />
               and built for real life.
             </motion.p>
@@ -489,7 +485,7 @@ export default function LandingPage() {
                 'Split expenses with friends',
                 'Request or send money instantly',
                 'Create and manage invoices',
-                'Settle in NIM or USDT',
+                'Settle instantly in NIM',
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-sm text-gray-700">
                   <span className="text-gray-400">{'>'}</span>
@@ -568,7 +564,7 @@ export default function LandingPage() {
           {[
             { title: 'Fast & Easy', desc: 'Create, share, and settle in just a few taps.' },
             { title: 'Secure & Private', desc: 'Bank-level security for your money and data.' },
-            { title: 'Borderless Payments', desc: 'Send and receive in NIM or USDT instantly.' },
+            { title: 'Borderless Payments', desc: 'Send and receive in NIM instantly.' },
           ].map((card) => (
             <motion.div
               key={card.title}

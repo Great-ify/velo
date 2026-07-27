@@ -33,7 +33,7 @@ export default function Home() {
   const navigate = useNavigate()
   const { username: storedUsername } = useAppStore()
   const { nimAddress } = useWalletStore()
-  const { nimBalance, usdtBalance, totalUsd, isLoading } = useWalletBalances()
+  const { nimBalance, totalUsd, isLoading } = useWalletBalances()
   const { data: transactions, isLoading: txLoading } = useTransactions()
   const { requireWallet } = useRequireWallet()
   const [balanceVisible, setBalanceVisible] = useState(true)
@@ -120,43 +120,21 @@ export default function Home() {
               )}
             </p>
 
-            <div className="flex items-center gap-0 border-t border-black/5 pt-4">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">N</span>
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-500 leading-tight">NIM balance</p>
-                  <p className="text-sm font-bold text-black leading-tight">
-                    {balanceVisible
-                      ? isLoading
-                        ? '...'
-                        : nimAddress
-                          ? formatCrypto(nimBalance, 'NIM')
-                          : '0 NIM'
-                      : '•••'}
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 border-t border-black/5 pt-4">
+              <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center">
+                <span className="text-white text-sm font-bold">N</span>
               </div>
-
-              <div className="w-px h-10 bg-black/10 mx-2" />
-
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">₮</span>
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-500 leading-tight">USDT balance</p>
-                  <p className="text-sm font-bold text-black leading-tight">
-                    {balanceVisible
-                      ? isLoading
-                        ? '...'
-                        : nimAddress
-                          ? formatCrypto(usdtBalance, 'USDT')
-                          : '0 USDT'
-                      : '•••'}
-                  </p>
-                </div>
+              <div>
+                <p className="text-[11px] text-gray-500 leading-tight">NIM balance</p>
+                <p className="text-sm font-bold text-black leading-tight">
+                  {balanceVisible
+                    ? isLoading
+                      ? '...'
+                      : nimAddress
+                        ? formatCrypto(nimBalance, 'NIM')
+                        : '0 NIM'
+                    : '•••'}
+                </p>
               </div>
             </div>
           </div>

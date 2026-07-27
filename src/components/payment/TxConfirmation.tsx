@@ -6,21 +6,11 @@ interface TxConfirmationProps {
   currency: string
   txHash: string
   method: string
-  chain?: string
   onDone: () => void
 }
 
-export default function TxConfirmation({ amount, currency, txHash, method, chain, onDone }: TxConfirmationProps) {
-  const explorerUrl =
-    method === 'NIM'
-      ? `https://nimiq.watch/#${txHash}`
-      : chain === 'polygon'
-        ? `https://polygonscan.com/tx/${txHash}`
-        : chain === 'base'
-          ? `https://basescan.org/tx/${txHash}`
-          : chain === 'arbitrum'
-            ? `https://arbiscan.io/tx/${txHash}`
-            : `https://etherscan.io/tx/${txHash}`
+export default function TxConfirmation({ amount, currency, txHash, onDone }: TxConfirmationProps) {
+  const explorerUrl = `https://nimiq.watch/#${txHash}`
 
   return (
     <motion.div
@@ -44,7 +34,7 @@ export default function TxConfirmation({ amount, currency, txHash, method, chain
         {formatCurrency(amount, currency)}
       </p>
       <p className="text-sm text-gray-400 mb-6">
-        via {method}{chain ? ` on ${chain}` : ''}
+        via NIM
       </p>
 
       <a

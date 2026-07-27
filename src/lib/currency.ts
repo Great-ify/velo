@@ -1,9 +1,8 @@
 const COINGECKO_URL =
-  'https://api.coingecko.com/api/v3/simple/price?ids=nimiq-2,tether&vs_currencies=usd'
+  'https://api.coingecko.com/api/v3/simple/price?ids=nimiq-2&vs_currencies=usd'
 
 export interface ExchangeRates {
   nim_usd: number
-  usdt_usd: number
 }
 
 let cachedRates: ExchangeRates | null = null
@@ -21,24 +20,17 @@ export async function getExchangeRates(): Promise<ExchangeRates> {
     const data = await res.json()
     cachedRates = {
       nim_usd: data['nimiq-2']?.usd ?? 0.001,
-      usdt_usd: data.tether?.usd ?? 1,
     }
     cacheTimestamp = now
     return cachedRates
   } catch {
-    // Fallback rates if API fails
-    return cachedRates ?? { nim_usd: 0.001, usdt_usd: 1 }
+    return cachedRates ?? { nim_usd: 0.001 }
   }
 }
 
 export function fiatToNim(fiatAmount: number, nimPrice: number): number {
   if (nimPrice <= 0) return 0
   return Math.ceil(fiatAmount / nimPrice)
-}
-
-export function fiatToUsdt(fiatAmount: number): number {
-  // USDT ≈ 1 USD
-  return Math.round(fiatAmount * 100) / 100
 }
 
 export function nimToLuna(nim: number): number {

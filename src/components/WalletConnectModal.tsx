@@ -83,10 +83,10 @@ export default function WalletConnectModal() {
               </div>
 
               <h2 className="text-xl font-bold text-black mb-2">
-                No wallets connected
+                No wallet connected
               </h2>
               <p className="text-sm text-gray-400 leading-relaxed mb-6 max-w-[260px]">
-                Connect a wallet to send, receive and manage payments.
+                Connect your Nimiq wallet to send, receive and manage payments.
               </p>
 
               {error && (
@@ -100,7 +100,7 @@ export default function WalletConnectModal() {
                 disabled={connecting}
                 className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {connecting ? 'Connecting...' : 'Connect Wallet'}
+                {connecting ? 'Connecting...' : 'Connect Nimiq Wallet'}
               </button>
 
               <button

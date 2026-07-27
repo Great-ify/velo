@@ -5,14 +5,14 @@ import { useWalletStore } from '@/stores/wallet'
 import { useAppStore } from '@/stores/app'
 import { useNimiqContext } from '@/providers/NimiqProvider'
 import { formatNimAddress } from '@/lib/nimiq'
-import { formatEvmAddress } from '@/lib/evm'
 import { copyToClipboard } from '@/lib/share'
 
 export default function Profile() {
-  const { nimAddress, evmAddress } = useWalletStore()
+  const { nimAddress } = useWalletStore()
   const { username } = useAppStore()
-  const { connectNimiq, connectEvm } = useNimiqContext()
+  const { connectNimiq, disconnect } = useNimiqContext()
   const [copied, setCopied] = useState<string | null>(null)
+  const [disconnecting, setDisconnecting] = useState(false)
 
   const paymentLink = username ? `velo.app/@${username}` : null
 
@@ -33,6 +33,11 @@ export default function Profile() {
     } catch {
       await handleCopy(`https://${paymentLink}`, 'link')
     }
+  }
+
+  const handleDisconnect = () => {
+    setDisconnecting(true)
+    disconnect()
   }
 
   return (
@@ -108,16 +113,16 @@ export default function Profile() {
         </motion.div>
       )}
 
-      {/* Wallets */}
+      {/* Wallet */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="mx-5 mb-6"
       >
-        <p className="text-sm font-semibold text-black mb-3">Wallets</p>
+        <p className="text-sm font-semibold text-black mb-3">Wallet</p>
 
-        <div className="bg-gray-50 border border-gray-100 rounded-xl divide-y divide-gray-100">
+        <div className="bg-gray-50 border border-gray-100 rounded-xl">
           {/* NIM Wallet */}
           <div className="p-4">
             <div className="flex items-start justify-between">
@@ -148,66 +153,30 @@ export default function Profile() {
               )}
             </div>
             {nimAddress ? (
-              <div className="flex items-center justify-between mt-2 ml-[52px]">
-                <span className="flex items-center gap-1.5 text-xs">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full" />
-                  <span className="text-emerald-600">Connected</span>
-                </span>
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  Nimiq Mainnet
-                  <span className="w-2 h-2 bg-amber-400 rounded-full" />
-                </span>
-              </div>
+              <>
+                <div className="flex items-center justify-between mt-2 ml-[52px]">
+                  <span className="flex items-center gap-1.5 text-xs">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full" />
+                    <span className="text-emerald-600">Connected</span>
+                  </span>
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    Nimiq Mainnet
+                    <span className="w-2 h-2 bg-amber-400 rounded-full" />
+                  </span>
+                </div>
+                <div className="mt-3 ml-[52px]">
+                  <button
+                    onClick={handleDisconnect}
+                    disabled={disconnecting}
+                    className="text-xs font-semibold text-red-500 active:text-red-700 transition-colors"
+                  >
+                    {disconnecting ? 'Disconnecting...' : 'Disconnect Wallet'}
+                  </button>
+                </div>
+              </>
             ) : (
               <button
                 onClick={connectNimiq}
-                className="ml-[52px] mt-2 text-xs font-semibold text-black underline"
-              >
-                Connect
-              </button>
-            )}
-          </div>
-
-          {/* USDT Wallet */}
-          <div className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-white text-sm font-bold">₮</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-black">USDT Wallet</p>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">
-                    {evmAddress ? formatEvmAddress(evmAddress) : 'Not connected'}
-                  </p>
-                </div>
-              </div>
-              {evmAddress && (
-                <button
-                  onClick={() => handleCopy(evmAddress, 'evm')}
-                  className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center active:bg-gray-100 transition-colors"
-                >
-                  {copied === 'evm' ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    <Copy size={14} strokeWidth={1.8} className="text-gray-500" />
-                  )}
-                </button>
-              )}
-            </div>
-            {evmAddress ? (
-              <div className="flex items-center justify-between mt-2 ml-[52px]">
-                <span className="flex items-center gap-1.5 text-xs">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full" />
-                  <span className="text-emerald-600">Connected</span>
-                </span>
-                <span className="text-xs text-gray-400">EVM Network</span>
-              </div>
-            ) : (
-              <button
-                onClick={connectEvm}
                 className="ml-[52px] mt-2 text-xs font-semibold text-black underline"
               >
                 Connect

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useAppStore } from '@/stores/app'
@@ -12,38 +12,60 @@ export default function UsernameSetup() {
   const [available, setAvailable] = useState<boolean | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sanitized = input.toLowerCase().replace(/[^a-z0-9._]/g, '')
 
-  const checkAvailability = async (value: string) => {
-    if (value.length < 3) {
+  // Debounced availability check
+  useEffect(() => {
+    if (sanitized.length < 3) {
       setAvailable(null)
       return
     }
+
     setChecking(true)
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', value)
-        .maybeSingle()
-      setAvailable(!data)
-    } catch {
-      setAvailable(null)
-    } finally {
-      setChecking(false)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', sanitized)
+          .maybeSingle()
+        setAvailable(!data)
+      } catch {
+        setAvailable(null)
+      } finally {
+        setChecking(false)
+      }
+    }, 400)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }
+  }, [sanitized])
 
   const handleChange = (val: string) => {
     const clean = val.toLowerCase().replace(/[^a-z0-9._]/g, '')
     setInput(clean)
     setError(null)
     setAvailable(null)
-    if (clean.length >= 3) {
-      const timeout = setTimeout(() => checkAvailability(clean), 400)
-      return () => clearTimeout(timeout)
+  }
+
+  /** Ensure a device ID exists — fallback for edge cases where the store is empty */
+  const ensureDeviceId = (): string => {
+    const storeId = useWalletStore.getState().deviceId
+    if (storeId) return storeId
+
+    // Fallback: read from localStorage or create a new one
+    let id = localStorage.getItem('velo-device-id')
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem('velo-device-id', id)
     }
+    useWalletStore.getState().setDeviceId(id)
+    return id
   }
 
   const handleSave = async () => {
@@ -60,13 +82,11 @@ export default function UsernameSetup() {
     setError(null)
 
     try {
-      const deviceId = useWalletStore.getState().deviceId
+      const deviceId = ensureDeviceId()
       const nimAddress = useWalletStore.getState().nimAddress
 
-      if (!deviceId) throw new Error('No device ID')
-
-      // Use upsert to handle both existing and missing profile rows
-      const { error: dbError } = await supabase
+      // Upsert the profile row — handles both new and existing rows
+      const { data: profile, error: dbError } = await supabase
         .from('profiles')
         .upsert(
           {
@@ -77,10 +97,16 @@ export default function UsernameSetup() {
           },
           { onConflict: 'device_id' }
         )
+        .select('id')
+        .single()
 
       if (dbError) throw dbError
 
+      // Update both username and profileId in stores
       setUsername(sanitized)
+      if (profile?.id) {
+        useWalletStore.getState().setProfileId(profile.id)
+      }
       setShowUsernameSetup(false)
       setInput('')
     } catch (err: any) {

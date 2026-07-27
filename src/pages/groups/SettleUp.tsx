@@ -5,10 +5,8 @@ import { useWalletStore } from '@/stores/wallet'
 import { usePayment } from '@/hooks/usePayment'
 import { formatCurrency } from '@/lib/currency'
 import PaymentButton from '@/components/payment/PaymentButton'
-import ChainSelector from '@/components/payment/ChainSelector'
 import TxConfirmation from '@/components/payment/TxConfirmation'
 import type { Debt } from '@/hooks/useBalances'
-import type { PaymentMethod } from '@/lib/constants'
 
 export default function SettleUp() {
   const { id: groupId } = useParams<{ id: string }>()
@@ -19,8 +17,6 @@ export default function SettleUp() {
   const { profileId } = useWalletStore()
   const { data: members } = useGroupMembers(groupId!)
   const { pay, status, txHash, error, reset } = usePayment()
-  const [chain, setChain] = useState('polygon')
-  const [method, setMethod] = useState<PaymentMethod>('NIM')
 
   if (!debt) {
     navigate(`/groups/${groupId}`, { replace: true })
@@ -29,11 +25,9 @@ export default function SettleUp() {
 
   const memberNames: Record<string, string> = {}
   const memberNim: Record<string, string> = {}
-  const memberEvm: Record<string, string> = {}
-  members?.forEach((m: { profile_id: string; profiles: { display_name: string; nim_address: string | null; evm_address: string | null } }) => {
-    memberNames[m.profile_id] = m.profiles?.display_name || 'Unknown'
+  members?.forEach((m: { profile_id: string; profiles: { username: string | null; nim_address: string | null } }) => {
+    memberNames[m.profile_id] = m.profiles?.username || 'Unknown'
     if (m.profiles?.nim_address) memberNim[m.profile_id] = m.profiles.nim_address
-    if (m.profiles?.evm_address) memberEvm[m.profile_id] = m.profiles.evm_address
   })
 
   if (status === 'success' && txHash) {
@@ -42,8 +36,7 @@ export default function SettleUp() {
         amount={debt.amount}
         currency="USD"
         txHash={txHash}
-        method={method}
-        chain={method === 'USDT' ? chain : undefined}
+        method="NIM"
         onDone={() => {
           reset()
           navigate(`/groups/${groupId}`, { replace: true })
@@ -60,11 +53,9 @@ export default function SettleUp() {
       fromProfileId: debt.from,
       toProfileId: debt.to,
       toNimAddress: memberNim[debt.to],
-      toEvmAddress: memberEvm[debt.to],
       amount: debt.amount,
       currency: 'USD',
-      method,
-      chain: method === 'USDT' ? chain : undefined,
+      method: 'NIM',
     })
   }
 
@@ -79,31 +70,12 @@ export default function SettleUp() {
 
       {isCurrentUserDebtor && (
         <>
-          {/* Method selector */}
-          <div className="flex gap-2">
-            {(['NIM', 'USDT'] as PaymentMethod[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMethod(m)}
-                className={`flex-1 py-3 rounded-xl font-medium text-sm border-2 transition-all ${
-                  method === m
-                    ? 'border-nimiq-gold bg-amber-50/50 text-nimiq-blue'
-                    : 'border-border text-gray-500'
-                }`}
-              >
-                {m === 'NIM' ? 'Pay with NIM' : 'Pay with USDT'}
-              </button>
-            ))}
-          </div>
-
-          {method === 'USDT' && <ChainSelector selected={chain} onChange={setChain} />}
-
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
           )}
 
           <PaymentButton
-            method={method}
+            method="NIM"
             onClick={handlePay}
             loading={status === 'pending' || status === 'confirming'}
           />

@@ -1,18 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { connectNimiqWallet } from '@/lib/nimiq'
-import { connectEvmWallet } from '@/lib/evm'
 
 interface WalletStore {
   nimAddress: string | null
-  evmAddress: string | null
   deviceId: string | null
   profileId: string | null
   isConnecting: boolean
   setDeviceId: (id: string) => void
   setProfileId: (id: string) => void
   connectNimiq: () => Promise<void>
-  connectEvm: () => Promise<void>
   disconnect: () => void
 }
 
@@ -20,7 +17,6 @@ export const useWalletStore = create<WalletStore>()(
   persist(
     (set) => ({
       nimAddress: null,
-      evmAddress: null,
       deviceId: null,
       profileId: null,
       isConnecting: false,
@@ -39,21 +35,9 @@ export const useWalletStore = create<WalletStore>()(
         }
       },
 
-      connectEvm: async () => {
-        set({ isConnecting: true })
-        try {
-          const address = await connectEvmWallet()
-          if (!address) throw new Error('No EVM accounts found')
-          set({ evmAddress: address })
-        } finally {
-          set({ isConnecting: false })
-        }
-      },
-
       disconnect: () =>
         set({
           nimAddress: null,
-          evmAddress: null,
           deviceId: null,
           profileId: null,
         }),
@@ -62,7 +46,6 @@ export const useWalletStore = create<WalletStore>()(
       name: 'velo-wallet',
       partialize: (state) => ({
         nimAddress: state.nimAddress,
-        evmAddress: state.evmAddress,
         deviceId: state.deviceId,
         profileId: state.profileId,
       }),

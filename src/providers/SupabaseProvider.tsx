@@ -32,11 +32,28 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const { data: existing } = await supabase
+        // Query for existing profile — retry once after a short delay
+        // to handle the race where NimiqProvider is still creating the row
+        let existing: { id: string; username: string | null } | null = null
+
+        const { data } = await supabase
           .from('profiles')
           .select('id, username')
           .eq('device_id', deviceId)
-          .single()
+          .maybeSingle()
+
+        existing = data
+
+        // If not found, wait briefly and retry (NimiqProvider may still be upserting)
+        if (!existing) {
+          await new Promise((r) => setTimeout(r, 500))
+          const { data: retry } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq('device_id', deviceId)
+            .maybeSingle()
+          existing = retry
+        }
 
         if (existing) {
           setProfileId(existing.id)
@@ -49,7 +66,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
             .from('profiles')
             .select('id, username, device_id')
             .eq('nim_address', nimAddress)
-            .single()
+            .maybeSingle()
 
           if (byAddress) {
             setProfileId(byAddress.id)

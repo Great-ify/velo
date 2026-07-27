@@ -2,19 +2,16 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, queryKeys } from '@/lib/supabase'
 import { payWithNim } from '@/lib/nimiq'
-import { payWithUsdt, waitForTxConfirmation } from '@/lib/evm'
-import { fiatToNim, nimToLuna, fiatToUsdt, getExchangeRates } from '@/lib/currency'
-import type { PaymentMethod } from '@/lib/constants'
+import { fiatToNim, nimToLuna, getExchangeRates } from '@/lib/currency'
 
 interface PaymentInput {
   groupId?: string
   fromProfileId: string
   toProfileId: string
   toNimAddress?: string
-  toEvmAddress?: string
   amount: number
   currency: string
-  method: PaymentMethod
+  method: 'NIM'
   chain?: string
 }
 
@@ -31,30 +28,14 @@ export function usePayment() {
       setStatus('pending')
       setError(null)
 
-      let hash: string | null = null
+      if (!input.toNimAddress) throw new Error('Recipient NIM address required')
+      const rates = await getExchangeRates()
+      const nimAmount = fiatToNim(input.amount, rates.nim_usd)
+      const lunaAmount = nimToLuna(nimAmount)
 
-      if (input.method === 'NIM') {
-        if (!input.toNimAddress) throw new Error('Recipient NIM address required')
-        const rates = await getExchangeRates()
-        const nimAmount = fiatToNim(input.amount, rates.nim_usd)
-        const lunaAmount = nimToLuna(nimAmount)
-
-        const result = await payWithNim(input.toNimAddress, lunaAmount)
-        if (!result) throw new Error('NIM payment cancelled or failed')
-        hash = result.hash
-      } else {
-        if (!input.toEvmAddress) throw new Error('Recipient EVM address required')
-        if (!input.chain) throw new Error('Chain selection required')
-
-        const usdtAmount = fiatToUsdt(input.amount)
-        hash = await payWithUsdt(input.toEvmAddress, usdtAmount, input.chain)
-        if (!hash) throw new Error('USDT payment cancelled or failed')
-
-        // Wait for confirmation
-        setStatus('confirming')
-        const confirmed = await waitForTxConfirmation(hash)
-        if (!confirmed) throw new Error('Transaction failed on-chain')
-      }
+      const result = await payWithNim(input.toNimAddress, lunaAmount)
+      if (!result) throw new Error('NIM payment cancelled or failed')
+      const hash = result.hash
 
       setTxHash(hash)
 
@@ -67,7 +48,7 @@ export function usePayment() {
           amount: input.amount,
           currency: input.currency,
           payment_method: input.method,
-          chain: input.chain || null,
+          chain: null,
           tx_hash: hash,
           status: 'confirmed',
         })

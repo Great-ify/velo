@@ -359,7 +359,7 @@ export default function Onboarding() {
     const deviceId = useWalletStore.getState().deviceId
     if (address && deviceId) {
       try {
-        await supabase.from('profiles').upsert(
+        const { data: profile } = await supabase.from('profiles').upsert(
           {
             device_id: deviceId,
             nim_address: address,
@@ -367,6 +367,12 @@ export default function Onboarding() {
           },
           { onConflict: 'device_id' }
         )
+        .select('id')
+        .single()
+
+        if (profile) {
+          useWalletStore.getState().setProfileId(profile.id)
+        }
       } catch (err) {
         console.error('Profile upsert failed:', err)
       }

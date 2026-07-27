@@ -29,8 +29,8 @@ interface SplitMember {
 
 interface SearchResult {
   id: string
-  display_name: string
-  wallet_address: string
+  username: string
+  nim_address: string | null
 }
 
 export default function SplitBill() {
@@ -57,11 +57,12 @@ export default function SplitBill() {
   const searchRef = useRef<HTMLInputElement>(null)
   const parsedAmount = parseFloat(amount) || 0
 
-  // Redistribute percentages equally when members change
+  // Redistribute percentages equally when member count changes
+  const memberCount = members.length
   useEffect(() => {
-    if (members.length > 0) {
-      const equal = Math.floor(100 / members.length)
-      const remainder = 100 - equal * members.length
+    if (memberCount > 0) {
+      const equal = Math.floor(100 / memberCount)
+      const remainder = 100 - equal * memberCount
       setMembers((prev) =>
         prev.map((m, i) => ({
           ...m,
@@ -69,9 +70,9 @@ export default function SplitBill() {
         }))
       )
     }
-  }, [members.length])
+  }, [memberCount])
 
-  // Search profiles
+  // Search profiles by username
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([])
@@ -79,23 +80,29 @@ export default function SplitBill() {
     }
     const timer = setTimeout(async () => {
       setSearchLoading(true)
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, display_name, wallet_address')
-        .ilike('display_name', `%${searchQuery}%`)
-        .limit(10)
-      setSearchResults(
-        (data || []).filter(
-          (r: SearchResult) => r.id !== profileId && !members.some((m) => m.id === r.id)
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, username, nim_address')
+          .not('username', 'is', null)
+          .ilike('username', `%${searchQuery}%`)
+          .limit(10)
+        setSearchResults(
+          (data || []).filter(
+            (r: SearchResult) => r.id !== profileId && !members.some((m) => m.id === r.id)
+          )
         )
-      )
-      setSearchLoading(false)
+      } catch {
+        setSearchResults([])
+      } finally {
+        setSearchLoading(false)
+      }
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery, profileId, members])
 
   const addMember = (result: SearchResult) => {
-    setMembers((prev) => [...prev, { id: result.id, name: result.display_name, percentage: 0 }])
+    setMembers((prev) => [...prev, { id: result.id, name: result.username, percentage: 0 }])
     setSearchQuery('')
     setSearchResults([])
   }
@@ -123,6 +130,13 @@ export default function SplitBill() {
   const handleExecuteSplit = async () => {
     setShowConfirmModal(false)
     setStep('loading')
+
+    if (!profileId) {
+      console.error('Split failed: no profileId')
+      setErrorType('balance')
+      setStep('error')
+      return
+    }
 
     try {
       const group = await createGroup.mutateAsync({
@@ -208,7 +222,7 @@ export default function SplitBill() {
               ref={searchRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name..."
+              placeholder="Search by username..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
               autoFocus
             />
@@ -229,10 +243,10 @@ export default function SplitBill() {
           )}
           {searchResults.map((r) => (
             <div key={r.id} className="flex items-center gap-3 py-3 border-b border-gray-100">
-              <MemberAvatar name={r.display_name} />
+              <MemberAvatar name={r.username} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-black truncate">{r.display_name}</p>
-                <p className="text-xs text-gray-400 truncate">@{r.display_name.toLowerCase().replace(/\s+/g, '')}</p>
+                <p className="text-sm font-semibold text-black truncate">{r.username}</p>
+                <p className="text-xs text-gray-400 truncate">@{r.username}</p>
               </div>
               <button
                 onClick={() => { addMember(r); setSearchOpen(false) }}

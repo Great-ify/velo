@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase'
 import { usePayment } from '@/hooks/usePayment'
 import { formatCurrency } from '@/lib/currency'
 import { copyToClipboard } from '@/lib/share'
-import type { PaymentMethod } from '@/lib/constants'
 
 interface PaymentRequest {
   id: string
@@ -31,12 +30,9 @@ export default function PayRequest() {
   const [request, setRequest] = useState<PaymentRequest | null>(null)
   const [pageState, setPageState] = useState<PageState>('loading')
   const [creatorProfile, setCreatorProfile] = useState<{
-    display_name: string
+    username: string | null
     nim_address: string | null
-    evm_address: string | null
   } | null>(null)
-  const [method, setMethod] = useState<PaymentMethod>('NIM')
-  const [chain] = useState('polygon')
   const { pay, status, txHash, error, reset } = usePayment()
   const [copied, setCopied] = useState(false)
 
@@ -57,7 +53,7 @@ export default function PayRequest() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name, nim_address, evm_address')
+        .select('username, nim_address')
         .eq('id', data.created_by)
         .single()
 
@@ -77,7 +73,7 @@ export default function PayRequest() {
     }
   }, [status])
 
-  const creatorName = creatorProfile?.display_name || 'Someone'
+  const creatorName = creatorProfile?.username || 'Someone'
   const formattedAmount = request
     ? formatCurrency(request.amount, request.currency)
     : '$0.00'
@@ -89,11 +85,9 @@ export default function PayRequest() {
       fromProfileId: 'payer',
       toProfileId: request.created_by,
       toNimAddress: creatorProfile?.nim_address || undefined,
-      toEvmAddress: creatorProfile?.evm_address || undefined,
       amount: request.amount,
       currency: request.currency,
-      method,
-      chain: method === 'USDT' ? chain : undefined,
+      method: 'NIM',
     })
   }
 
@@ -105,20 +99,9 @@ export default function PayRequest() {
 
   const handleViewTransaction = () => {
     if (!txHash) return
-    const url =
-      method === 'NIM'
-        ? `https://nimiq.watch/#${txHash}`
-        : chain === 'polygon'
-          ? `https://polygonscan.com/tx/${txHash}`
-          : chain === 'base'
-            ? `https://basescan.org/tx/${txHash}`
-            : chain === 'arbitrum'
-              ? `https://arbiscan.io/tx/${txHash}`
-              : `https://etherscan.io/tx/${txHash}`
-    window.open(url, '_blank')
+    window.open(`https://nimiq.watch/#${txHash}`, '_blank')
   }
 
-  /* ─── Loading ─── */
   if (pageState === 'loading') {
     return (
       <div className="min-h-dvh bg-white flex items-center justify-center">
@@ -127,20 +110,11 @@ export default function PayRequest() {
     )
   }
 
-  /* ─── Not Found ─── */
   if (pageState === 'not_found') {
     return (
       <div className="min-h-dvh bg-white flex flex-col items-center justify-center px-6 text-center">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#9ca3af"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
@@ -152,97 +126,38 @@ export default function PayRequest() {
     )
   }
 
-  /* ─── Success ─── */
   if (pageState === 'success') {
     return (
       <div className="min-h-dvh bg-white flex items-center justify-center px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center text-center w-full max-w-sm"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6"
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center w-full max-w-sm">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, delay: 0.1 }} className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </motion.div>
-
           <h1 className="text-xl font-bold text-black mb-2">Payment successful!</h1>
           <p className="text-sm text-gray-400 mb-8">
-            You paid{' '}
-            <span className="font-semibold text-black">{formattedAmount}</span> to{' '}
-            <span className="font-semibold text-black">@{creatorName}</span>
+            You paid <span className="font-semibold text-black">{formattedAmount}</span> to <span className="font-semibold text-black">@{creatorName}</span>
           </p>
-
-          <button
-            onClick={handleViewTransaction}
-            className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all"
-          >
+          <button onClick={handleViewTransaction} className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all">
             View Transaction
           </button>
-
-          <a href="/" className="mt-5 text-sm text-gray-400 font-medium">
-            Back to Velo
-          </a>
+          <a href="/" className="mt-5 text-sm text-gray-400 font-medium">Back to Velo</a>
         </motion.div>
       </div>
     )
   }
 
-  /* ─── Error (Insufficient Balance) ─── */
   if (pageState === 'error') {
     return (
       <div className="min-h-dvh bg-white flex items-center justify-center px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center text-center w-full max-w-sm"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6"
-          >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center w-full max-w-sm">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, delay: 0.1 }} className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
             <span className="text-4xl font-bold text-amber-400">!</span>
           </motion.div>
-
           <h1 className="text-xl font-bold text-black mb-2">Payment failed</h1>
-          <p className="text-sm text-gray-400 mb-8">
-            {error || 'Insufficient balance to complete this payment.'}
-          </p>
-
-          <button
-            onClick={() => {
-              reset()
-              setPageState('ready')
-            }}
-            className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all"
-          >
-            Add Funds
-          </button>
-
-          <button
-            onClick={() => {
-              reset()
-              setPageState('ready')
-            }}
-            className="mt-5 text-sm text-gray-400 font-medium"
-          >
+          <p className="text-sm text-gray-400 mb-8">{error || 'Insufficient balance to complete this payment.'}</p>
+          <button onClick={() => { reset(); setPageState('ready') }} className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] active:scale-[0.98] transition-all">
             Try Again
           </button>
         </motion.div>
@@ -250,200 +165,72 @@ export default function PayRequest() {
     )
   }
 
-  /* ─── Browser Fallback ─── */
   if (pageState === 'fallback') {
     return (
       <div className="min-h-dvh bg-white flex items-center justify-center px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center text-center w-full max-w-sm"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center w-full max-w-sm">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#6b7280"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
               <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
               <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
             </svg>
           </div>
-
           <h1 className="text-xl font-bold text-black mb-2">Open in your wallet</h1>
-          <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-xs">
-            To complete this payment, please open this link in the Nimiq Wallet.
-          </p>
-
-          <button
-            onClick={() => {
-              window.open(
-                `nimiq://pay?url=${encodeURIComponent(window.location.href)}`,
-                '_blank'
-              )
-            }}
-            className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-          >
+          <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-xs">To complete this payment, please open this link in the Nimiq Wallet.</p>
+          <button onClick={() => window.open(`nimiq://pay?url=${encodeURIComponent(window.location.href)}`, '_blank')} className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
             Open in Nimiq Wallet
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
           </button>
-
-          <button
-            onClick={handleCopyLink}
-            className="mt-5 text-sm text-gray-400 font-medium"
-          >
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
+          <button onClick={handleCopyLink} className="mt-5 text-sm text-gray-400 font-medium">{copied ? 'Copied!' : 'Copy Link'}</button>
         </motion.div>
       </div>
     )
   }
 
-  /* ─── Ready / Processing ─── */
   return (
     <div className="min-h-dvh bg-white">
       <div className="max-w-sm mx-auto px-6 py-6">
-        {/* Top bar: globe + language */}
         <div className="flex items-center justify-between mb-10">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#9ca3af"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="2" y1="12" x2="22" y2="12" />
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
           </svg>
           <div className="flex items-center gap-1 text-sm text-gray-500 font-medium">
             EN
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
           </div>
         </div>
 
-        {/* Profile + amount */}
         <div className="flex flex-col items-center text-center mb-8">
-          {/* Avatar */}
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3 border-2 border-gray-100">
-            <span className="text-xl font-bold text-gray-500">
-              {creatorName.charAt(0).toUpperCase()}
-            </span>
+            <span className="text-xl font-bold text-gray-500">{creatorName.charAt(0).toUpperCase()}</span>
           </div>
-
           <p className="text-sm text-gray-500 mb-1">@{creatorName} requests</p>
-          <p className="text-[2.5rem] font-bold text-black leading-tight">
-            {formattedAmount}
-          </p>
-          {request?.description && (
-            <p className="text-sm text-gray-500 mt-1.5">
-              {request.description} 🍴
-            </p>
-          )}
+          <p className="text-[2.5rem] font-bold text-black leading-tight">{formattedAmount}</p>
+          {request?.description && <p className="text-sm text-gray-500 mt-1.5">{request.description}</p>}
         </div>
 
-        {/* Choose payment method */}
-        <p className="text-sm text-gray-400 text-center mb-3">
-          Choose payment method
-        </p>
-
-        {/* NIM / USDT toggle */}
-        <div className="flex gap-3 mb-6">
-          {(['NIM', 'USDT'] as PaymentMethod[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMethod(m)}
-              disabled={pageState === 'processing'}
-              className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-                method === m
-                  ? 'bg-black text-white'
-                  : 'bg-white text-black border border-gray-200'
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-
-        {/* Processing state: spinner + text */}
         {pageState === 'processing' ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center py-8"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
             <div className="w-10 h-10 border-2 border-gray-200 border-t-black rounded-full animate-spin mb-5" />
-            <p className="text-base font-semibold text-black mb-1">
-              Redirecting to payment...
-            </p>
+            <p className="text-base font-semibold text-black mb-1">Processing payment...</p>
             <p className="text-sm text-gray-400">Please wait a moment.</p>
           </motion.div>
         ) : (
           <>
-            {/* Pay button */}
             <button
               onClick={handlePay}
               className="w-full py-4 bg-black text-white rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              Pay {formattedAmount}
+              Pay {formattedAmount} with NIM
             </button>
-
-            {/* Secured by Nimiq */}
             <div className="flex items-center justify-center gap-1.5 mt-6">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#9ca3af"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
