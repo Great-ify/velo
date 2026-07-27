@@ -31,3 +31,7 @@ export const USDT_CONTRACTS: Record<string, { address: string; decimals: number 
     decimals: 6,
   },
 }
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+
+export type SettlementStatus = 'pending' | 'confirmed' | 'failed' | 'expired'
