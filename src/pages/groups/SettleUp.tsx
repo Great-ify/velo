@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useGroupMembers } from '@/hooks/useGroups'
 import { useWalletStore } from '@/stores/wallet'
