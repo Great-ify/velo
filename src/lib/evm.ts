@@ -146,7 +146,8 @@ export async function getUsdtBalance(
   if (!contract || !window.ethereum) return 0
 
   try {
-    await switchChain(chainKey)
+    // Note: We do not call switchChain here to avoid prompting the user
+    // with a wallet popup just for reading their balance.
     const selector = '70a08231'
     const paddedAddress = address.slice(2).toLowerCase().padStart(64, '0')
     const data = '0x' + selector + paddedAddress

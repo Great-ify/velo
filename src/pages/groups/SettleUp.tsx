@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useGroupMembers } from '@/hooks/useGroups'
 import { useWalletStore } from '@/stores/wallet'
@@ -17,8 +18,13 @@ export default function SettleUp() {
   const { data: members } = useGroupMembers(groupId!)
   const { pay, status, txHash, error, reset } = usePayment()
 
+  useEffect(() => {
+    if (!debt) {
+      navigate(`/groups/${groupId}`, { replace: true })
+    }
+  }, [debt, groupId, navigate])
+
   if (!debt) {
-    navigate(`/groups/${groupId}`, { replace: true })
     return null
   }
 
